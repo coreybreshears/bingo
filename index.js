@@ -19,14 +19,87 @@
  * will pass valid data to your function.
  */
 
-function checkForBingo (bingoCard, drawnNumbers) {
-  // this code for debug purposes, you can remove.
-  console.log('Drawn Numbers: ' + JSON.stringify(drawnNumbers));
+// Currently, the board can be any size
+// You need to update the width*height, center and targetCount to extend the board
+const boardwidth = 5;
+const boardHeight = 5;
+const center = [2, 2];
+const targetCount = 5;
 
-  for (let i=0, len=bingoCard.length; i<len; i++) {
-    let row = Math.floor(i/5);
-    let col = i % 5;
-   //  console.log(`${row},${col}: ${bingoCard[i]}`);
+function getKey([row, col]) {
+  return `${row}:${col}`;
+}
+
+function isValidPoint(row, col) {
+  return row >= 0 && row < boardHeight && col >= 0 && col < boardwidth;
+}
+
+// Check the board bidirectionally
+function checkBoard (board, startPoint, visited, offset) {
+  let count = 0;
+  visited[getKey(startPoint)] = true;
+
+  for (let [row, col] = startPoint; isValidPoint(row, col); row += offset[0], col += offset[1]) {
+    // Update the cell as a visited cell
+    visited[getKey([row, col])] = true;
+    if (board[getKey([row, col])]) count ++;
+    else break;
+
+    // return true if the count reached to the target
+    if (count >= targetCount) return true;
+  }
+
+  count --;
+  
+  for (let [row, col] = startPoint; isValidPoint(row, col); row -= offset[0], col -= offset[1]) {
+    // Update the cell as a visited cell
+    visited[getKey([row, col])] = true;
+    if (board[getKey([row, col])]) count ++;
+    else break;
+
+    // return true if the count reached to the target
+    if (count >= targetCount) return true;
+  }
+
+  return false;
+}
+
+function checkForBingo (bingoCard, drawnNumbers) {
+  const board = {};
+
+  // Memorize the row and column index of each number in the board
+  for (let i = 0, len = bingoCard.length; i < len; i ++) {
+    let row = Math.floor(i / boardwidth);
+    let col = i % boardwidth;
+
+    board[bingoCard[i]] = [row, col];
+  }
+
+  // Flag board center
+  const drawnBoard = { [getKey(center)]: true };
+  const visited = { [getKey(center)]: true };
+
+  // Flag board cells with drawnNumbers
+  for (const number of drawnNumbers){
+    // Ignore numbers that are not in board
+    if (!board[number]) continue;
+    drawnBoard[getKey(board[number])] = true;
+  }
+
+  for (const number of drawnNumbers) {
+    // Ignore numbers that are not in board
+    if (!board[number]) continue;
+    // Not visit cells that were visited before
+    if (visited[getKey(board[number])]) continue;
+
+    // Check row
+    if (checkBoard(drawnBoard, board[number], visited, [0, 1])) return true;
+    // Check column
+    if (checkBoard(drawnBoard, board[number], visited, [1, 0])) return true;
+    // Check diagonally
+    if (checkBoard(drawnBoard, board[number], visited, [1, 1])) return true;
+    // Check anti-diagonally
+    if (checkBoard(drawnBoard, board[number], visited, [1, -1])) return true;
   }
 
   return false;
@@ -37,7 +110,7 @@ module.exports = checkForBingo;
 // here are some samples
 
 // this should return true with diagonal + free
-checkForBingo(
+console.log(checkForBingo(
   [
     8, 29, 35, 54, 65,
     13, 24, 44, 48, 67,
@@ -48,10 +121,10 @@ checkForBingo(
   [
     8, 24, 53, 72
   ]
-);
+));
 
 // this should return false
-checkForBingo(
+console.log(checkForBingo(
   [
    8, 29, 35, 54, 65,
    13, 24, 44, 48, 67,
@@ -62,4 +135,15 @@ checkForBingo(
   [
     1, 33, 53, 65, 29, 75
   ]
-);
+));
+
+// console.log(checkForBingo(
+//   [
+//     24, 44, 48,
+//     21, 'FREE', 59,
+//     19, 34, 53,
+//   ],
+//   [
+//     8, 21, 59, 72
+//   ]
+// ));
